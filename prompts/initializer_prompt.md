@@ -11,8 +11,8 @@ before proceeding.
 
 ### CRITICAL FIRST TASK: Create feature_list.json
 
-Based on `app_spec.txt`, create a file called `feature_list.json` with 200 detailed
-end-to-end test cases. This file is the single source of truth for what
+Based on `app_spec.txt`, create a file called `feature_list.json` with 150 detailed
+end-to-end test cases (this is a Simple complexity app). This file is the single source of truth for what
 needs to be built.
 
 **Format:**
@@ -43,7 +43,7 @@ needs to be built.
 
 **Requirements for feature_list.json:**
 - Test count based on complexity tier (from app_spec.txt):
-  - **Simple apps**: Minimum 150 tests
+  - **Simple apps**: Minimum 150 tests ← This app
   - **Medium apps**: Minimum 250 tests
   - **Complex apps**: Minimum 400 tests
 - Both "functional" and "style" categories

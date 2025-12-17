@@ -13,14 +13,91 @@ from pathlib import Path
 
 
 WEBHOOK_URL = os.environ.get("PROGRESS_N8N_WEBHOOK_URL")
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 PROGRESS_CACHE_FILE = ".progress_cache"
+TELEGRAM_MILESTONE_INTERVAL = 10  # Notify every N completed features
+
+
+def send_telegram_notification(message: str) -> bool:
+    """
+    Send a notification via Telegram bot.
+
+    Args:
+        message: The message to send
+
+    Returns:
+        True if sent successfully, False otherwise
+    """
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return False
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message,
+        "parse_mode": "HTML"
+    }
+
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode('utf-8'),
+            headers={'Content-Type': 'application/json'}
+        )
+        urllib.request.urlopen(req, timeout=10)
+        return True
+    except Exception as e:
+        print(f"[Telegram notification failed: {e}]")
+        return False
+
+
+def check_telegram_milestone(passing: int, previous: int, total: int, project_dir: Path, completed_tests: list) -> None:
+    """
+    Check if we've hit a milestone (every 10 features) and send Telegram notification.
+
+    Args:
+        passing: Current number of passing tests
+        previous: Previous number of passing tests
+        total: Total number of tests
+        project_dir: Project directory name
+        completed_tests: List of newly completed test descriptions
+    """
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return
+
+    # Calculate which milestones we've crossed
+    previous_milestone = (previous // TELEGRAM_MILESTONE_INTERVAL) * TELEGRAM_MILESTONE_INTERVAL
+    current_milestone = (passing // TELEGRAM_MILESTONE_INTERVAL) * TELEGRAM_MILESTONE_INTERVAL
+
+    # Check if we crossed a new milestone
+    if current_milestone > previous_milestone:
+        percentage = round((passing / total) * 100, 1) if total > 0 else 0
+
+        # Build the message
+        message = (
+            f"🎯 <b>Milestone Reached!</b>\n\n"
+            f"📊 <b>Project:</b> {project_dir.name}\n"
+            f"✅ <b>Progress:</b> {passing}/{total} tests ({percentage}%)\n"
+            f"🏆 <b>Milestone:</b> {current_milestone} features completed!\n\n"
+        )
+
+        # Add recently completed tests (last 5 max to keep message short)
+        if completed_tests:
+            recent = completed_tests[-5:] if len(completed_tests) > 5 else completed_tests
+            message += "📝 <b>Recently completed:</b>\n"
+            for test in recent:
+                # Truncate long descriptions
+                desc = test[:60] + "..." if len(test) > 60 else test
+                message += f"  • {desc}\n"
+
+        message += f"\n⏰ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+
+        send_telegram_notification(message)
 
 
 def send_progress_webhook(passing: int, total: int, project_dir: Path) -> None:
-    """Send webhook notification when progress increases."""
-    if not WEBHOOK_URL:
-        return  # Webhook not configured
-
+    """Send webhook notification and Telegram milestone alerts when progress increases."""
     cache_file = project_dir / PROGRESS_CACHE_FILE
     previous = 0
     previous_passing_tests = set()
@@ -59,27 +136,32 @@ def send_progress_webhook(passing: int, total: int, project_dir: Path) -> None:
             except:
                 pass
 
-        payload = {
-            "event": "test_progress",
-            "passing": passing,
-            "total": total,
-            "percentage": round((passing / total) * 100, 1) if total > 0 else 0,
-            "previous_passing": previous,
-            "tests_completed_this_session": passing - previous,
-            "completed_tests": completed_tests,
-            "project": project_dir.name,
-            "timestamp": datetime.utcnow().isoformat() + "Z"
-        }
+        # Send Telegram notification if milestone reached (every 10 features)
+        check_telegram_milestone(passing, previous, total, project_dir, completed_tests)
 
-        try:
-            req = urllib.request.Request(
-                WEBHOOK_URL,
-                data=json.dumps([payload]).encode('utf-8'),  # n8n expects array
-                headers={'Content-Type': 'application/json'}
-            )
-            urllib.request.urlopen(req, timeout=5)
-        except Exception as e:
-            print(f"[Webhook notification failed: {e}]")
+        # Send n8n webhook if configured
+        if WEBHOOK_URL:
+            payload = {
+                "event": "test_progress",
+                "passing": passing,
+                "total": total,
+                "percentage": round((passing / total) * 100, 1) if total > 0 else 0,
+                "previous_passing": previous,
+                "tests_completed_this_session": passing - previous,
+                "completed_tests": completed_tests,
+                "project": project_dir.name,
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+
+            try:
+                req = urllib.request.Request(
+                    WEBHOOK_URL,
+                    data=json.dumps([payload]).encode('utf-8'),  # n8n expects array
+                    headers={'Content-Type': 'application/json'}
+                )
+                urllib.request.urlopen(req, timeout=5)
+            except Exception as e:
+                print(f"[Webhook notification failed: {e}]")
 
         # Update cache with count and passing indices
         cache_file.write_text(json.dumps({
