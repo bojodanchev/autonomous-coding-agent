@@ -270,7 +270,7 @@ Focus on functional correctness. UI polish can be addressed later.
 
 ## IMPORTANT REMINDERS
 
-**Your Goal:** Production-quality application with ALL tests passing (150+ for this Simple complexity app)
+**Your Goal:** Production-quality application with ALL tests passing (400+ for this Complex app)
 
 **This Session's Goal:** Complete at least one feature perfectly
 

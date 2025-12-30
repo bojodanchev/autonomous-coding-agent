@@ -1,476 +1,884 @@
 <project_specification>
-  <project_name>Ops Monitor</project_name>
+  <project_name>StorePro</project_name>
 
   <overview>
-    An internal DevOps and operations monitoring dashboard for a fintech company, designed to be displayed on multiple TV screens across the office for ~40 employees. The dashboard provides real-time visibility into infrastructure health, Kubernetes clusters, deployments, payment processing, and alerts with auto-rotating views optimized for large displays.
+    StorePro is a SaaS platform that enables customers to build AI-assisted ecommerce stores, view comprehensive analytics dashboards, and manage their online businesses. The platform features a public marketing landing page, customer portal with store builder and analytics, and an admin panel for full platform control. Customers can deploy stores on subdomains (store.storepro.io) or connect custom domains, and accept payments via their own Stripe/PayPal accounts.
   </overview>
 
   <technology_stack>
     <frontend>
-      <framework>React with TypeScript</framework>
-      <styling>Tailwind CSS with dark mode</styling>
-      <charts>Recharts for data visualization</charts>
-      <state>React Query for data fetching and caching</state>
-      <build>Vite for development and building</build>
+      <framework>Next.js 14 with App Router</framework>
+      <language>TypeScript</language>
+      <styling>Tailwind CSS + shadcn/ui</styling>
+      <state_management>React Context + TanStack Query</state_management>
+      <forms>React Hook Form + Zod validation</forms>
+      <charts>Recharts for analytics visualizations</charts>
     </frontend>
     <backend>
-      <runtime>Python 3.11+ with FastAPI</runtime>
-      <database>SQLite with sqlite3 standard library</database>
-      <scheduling>APScheduler for polling external services</scheduling>
-      <async>uvicorn ASGI server</async>
+      <runtime>Node.js</runtime>
+      <framework>Next.js API Routes</framework>
+      <database>PostgreSQL</database>
+      <orm>Prisma</orm>
+      <authentication>NextAuth.js (Auth.js)</authentication>
+      <file_storage>AWS S3 / Cloudflare R2</file_storage>
+      <payments>Stripe (platform billing + customer store payments)</payments>
+      <ai>OpenAI API for store generation suggestions</ai>
     </backend>
+    <infrastructure>
+      <hosting>Vercel</hosting>
+      <database_hosting>Vercel Postgres or Supabase</database_hosting>
+      <cdn>Vercel Edge Network</cdn>
+      <domains>Custom domain support via Vercel</domains>
+    </infrastructure>
     <communication>
-      <api>REST API with JSON</api>
-      <realtime>Server-Sent Events (SSE) for live updates</realtime>
+      <api>REST API with Next.js API Routes</api>
+      <realtime>Server-Sent Events for live analytics updates</realtime>
     </communication>
   </technology_stack>
 
   <prerequisites>
     <environment_setup>
-      - Python 3.11+ installed
-      - Node.js 18+ installed (for frontend)
-      - pip and venv for Python dependencies
-      - npm for frontend dependencies
-      - Environment variables configured for external service placeholders
+      - Node.js 18+ installed
+      - PostgreSQL database (local or cloud)
+      - Stripe account with API keys
+      - OpenAI API key
+      - AWS S3 or Cloudflare R2 bucket for file storage
+      - Environment variables configured (.env.local)
     </environment_setup>
   </prerequisites>
 
   <security_and_access_control>
-    <complexity_tier>Simple</complexity_tier>
-    <test_count_target>150+</test_count_target>
+    <complexity_tier>Complex</complexity_tier>
+    <test_count_target>400+</test_count_target>
     <user_roles>
-      <role name="viewer">
+      <role name="admin">
+        <description>Platform administrators with full control</description>
         <permissions>
-          - Can view all dashboard screens
-          - Can see all metrics and alerts
-          - Cannot modify settings or thresholds
+          - View all customers and their data
+          - Edit any customer's dashboard or store
+          - Manage platform subscriptions and billing
+          - Send announcements/notifications to all users
+          - Approve/reject stores before going live
+          - Access admin analytics (platform-wide metrics)
+          - Manage templates and AI configurations
+          - View platform revenue and financial reports
+          - Suspend or ban user accounts
+          - Access all admin panel features
         </permissions>
         <protected_routes>
-          - /admin/* (admin only)
+          - /admin/*
+          - /api/admin/*
         </protected_routes>
       </role>
-      <role name="admin">
+      <role name="customer">
+        <description>Paying customers who build and manage stores</description>
         <permissions>
-          - Can view all dashboard screens
-          - Can configure data source connections
-          - Can set alert thresholds
-          - Can customize dashboard layout and panels
-          - Can manage rotation settings
+          - View own dashboard and analytics
+          - Create and manage own ecommerce stores
+          - Edit store products, pages, and settings
+          - Connect custom domains
+          - Configure payment providers (Stripe/PayPal)
+          - View own sales and traffic data
+          - Export own data
+          - Manage account settings and billing
+          - Access customer support
         </permissions>
         <protected_routes>
-          - Full access to all routes
+          - /dashboard/*
+          - /store-builder/*
+          - /settings/*
+          - /api/customer/*
+        </protected_routes>
+      </role>
+      <role name="visitor">
+        <description>Unauthenticated users viewing public pages</description>
+        <permissions>
+          - View landing page
+          - View pricing page
+          - View public store pages (customer stores)
+          - Register for an account
+          - Contact support
+        </permissions>
+        <protected_routes>
+          - / (landing page)
+          - /pricing
+          - /login
+          - /register
+          - /store/* (public customer stores)
         </protected_routes>
       </role>
     </user_roles>
     <authentication>
-      <method>Simple password protection for admin panel</method>
-      <session_timeout>24 hours</session_timeout>
-      <password_requirements>Admin password stored in environment variable</password_requirements>
+      <method>Email/password + OAuth (Google, GitHub)</method>
+      <session_timeout>7 days with refresh tokens</session_timeout>
+      <password_requirements>Minimum 8 characters, 1 uppercase, 1 number</password_requirements>
     </authentication>
     <sensitive_operations>
-      - Changing data source credentials requires admin password
-      - Modifying alert thresholds requires admin password
+      - Delete account requires password confirmation
+      - Store publish requires admin approval
+      - Payment provider changes require email verification
+      - Domain changes require DNS verification
+      - Bulk data deletion requires confirmation modal
     </sensitive_operations>
   </security_and_access_control>
 
   <core_features>
-    <dashboard_views>
-      - Auto-rotating dashboard with 30-second intervals
-      - Infrastructure Overview panel
-      - Kubernetes & Containers panel
-      - Deployments & CI/CD panel
-      - Payments & Providers panel
-      - Alerts & Incidents panel
-      - Full-screen TV display mode
-      - Manual view navigation override
-      - Pause/resume rotation
-    </dashboard_views>
+    <landing_page>
+      - Hero section with headline, subheadline, and CTA buttons
+      - Feature benefits section with icons and descriptions
+      - How it works / method section (step-by-step process)
+      - Testimonials section with customer reviews and ratings
+      - Pricing section with tiered packages
+      - FAQ accordion section
+      - Statistics bar (customers served, revenue generated, etc.)
+      - Footer with navigation, legal links, and contact info
+      - Responsive design for all screen sizes
+      - SEO optimized with meta tags and structured data
+      - Live chat widget integration
+    </landing_page>
 
-    <infrastructure_monitoring>
-      - Server health status indicators
-      - Overall uptime percentage display
-      - API response time metrics
-      - Error rate tracking and display
-      - CPU usage indicators
-      - Memory usage indicators
-      - Disk usage indicators
-      - Network latency metrics
-      - Service status grid
-      - Health check endpoint monitoring
-      - 24-hour trend mini-charts
-      - Status color coding (green/yellow/red)
-    </infrastructure_monitoring>
+    <pricing_page>
+      - Multiple pricing tiers with feature comparison
+      - One-time payment model (Basic: $69, Standard: $399, Advanced: $799, Pro: $1399, Master: $2499)
+      - Feature lists for each tier
+      - Most popular badge on recommended tier
+      - Custom package inquiry option
+      - Testimonials specific to pricing
+      - FAQ section for pricing questions
+      - Secure checkout with Stripe integration
+      - Payment confirmation and receipt emails
+    </pricing_page>
 
-    <kubernetes_monitoring>
-      - Cluster health overview
-      - Pod status display (running/pending/failed)
-      - Pod restart counts
-      - Downtime logs viewer
-      - Container resource usage
-      - Node status indicators
-      - Namespace overview
-      - Deployment replica status
-      - Recent crash loop detection
-      - Pod age and uptime
-      - Resource limit warnings
-    </kubernetes_monitoring>
+    <authentication>
+      - Email/password registration with email verification
+      - OAuth login (Google, GitHub)
+      - Login with remember me option
+      - Password reset via email
+      - Two-factor authentication (optional)
+      - Session management (view active sessions, revoke)
+      - Account lockout after failed attempts
+      - Secure password hashing (bcrypt)
+    </authentication>
 
-    <deployment_cicd>
-      - Recent deployments list
-      - Deployment status indicators
-      - Pipeline status display
-      - Build success/failure rates
-      - Last deployment timestamp
-      - Deployment frequency metrics
-      - Failed deployment alerts
-      - Rollback indicators
-      - Environment deployment status (dev/staging/prod)
-      - Commit/PR references
-    </deployment_cicd>
+    <customer_dashboard>
+      - Overview cards (total sales, visitors, orders, conversion rate)
+      - Revenue chart (daily/weekly/monthly/yearly)
+      - Traffic chart (visitors over time)
+      - Recent orders list
+      - Top selling products
+      - Sales by source/channel
+      - Real-time visitor count
+      - Quick action buttons (view store, add product, etc.)
+      - Date range selector for all analytics
+      - Export data to CSV/PDF
+      - Customizable dashboard widgets
+    </customer_dashboard>
 
-    <payment_monitoring>
-      - Transaction volume counters
-      - Payment success rate percentage
-      - Payment provider status (Stripe, etc.)
-      - Provider health indicators
-      - Transaction processing latency
-      - Failed transaction alerts
-      - Provider degradation warnings
-      - Settlement status
-      - Chargeback rate monitoring
-      - Payment method breakdown
-    </payment_monitoring>
+    <analytics_module>
+      - Sales analytics (revenue, AOV, order count, refunds)
+      - Traffic analytics (visitors, page views, bounce rate, session duration)
+      - Product performance (views, add to cart, purchases, conversion)
+      - Customer analytics (new vs returning, geographic distribution)
+      - Source/channel attribution (organic, paid, social, direct)
+      - Conversion funnel visualization
+      - Real-time analytics feed
+      - Comparative metrics (vs previous period)
+      - Goal tracking and KPIs
+      - Heatmaps for page engagement (future)
+    </analytics_module>
 
-    <alerting>
-      - Active alerts display
-      - Alert severity levels (critical/warning/info)
-      - Alert timestamp and duration
-      - Alert acknowledgment status
-      - Recent incidents timeline
-      - Alert count by category
-      - Server down alerts
-      - Error rate spike alerts (>5% threshold)
-      - API latency threshold alerts
-      - Payment provider down alerts
-      - Deployment failure alerts
-      - Kubernetes pod crash alerts
-      - Visual color-coded alerts (no sound)
-    </alerting>
+    <store_builder>
+      - Template gallery with 5 starter templates (Fashion, Electronics, Food, Home Decor, General)
+      - AI-powered store generation from text prompt
+      - AI suggests designs based on industry/preferences
+      - Drag-and-drop page builder
+      - Visual editor for customizing templates
+      - Product management (add, edit, delete products)
+      - Category/collection management
+      - Page management (home, about, contact, custom pages)
+      - Navigation menu editor
+      - Theme customization (colors, fonts, spacing)
+      - Logo and branding upload
+      - Mobile preview mode
+      - SEO settings per page
+      - Social media integration
+      - Live preview of changes
+    </store_builder>
 
-    <historical_data>
-      - 24-hour historical charts
-      - Trend indicators (up/down arrows)
-      - Peak/low markers
-      - Time-series graphs
-      - Comparative metrics (now vs 24h ago)
-    </historical_data>
+    <product_management>
+      - Add products with title, description, price, images
+      - Multiple product images with gallery
+      - Product variants (size, color, etc.)
+      - Inventory tracking
+      - SKU management
+      - Product categories and tags
+      - Bulk import/export products (CSV)
+      - Product visibility (published, draft, archived)
+      - SEO fields (meta title, description, URL slug)
+      - Related products suggestions
+      - Product reviews/ratings display
+    </product_management>
+
+    <store_settings>
+      - General settings (store name, description, contact email)
+      - Domain management (subdomain + custom domain)
+      - DNS verification for custom domains
+      - SSL certificate provisioning
+      - Currency and locale settings
+      - Tax configuration
+      - Shipping zones and rates
+      - Payment provider connection (Stripe, PayPal)
+      - Checkout customization
+      - Order notification emails
+      - Legal pages (privacy policy, terms, refund policy)
+    </store_settings>
+
+    <customer_store_frontend>
+      - Responsive storefront design
+      - Product listing page with filters and sorting
+      - Product detail page with gallery, variants, add to cart
+      - Shopping cart with quantity adjustment
+      - Checkout flow (shipping, payment, confirmation)
+      - Order confirmation page and email
+      - Customer account (order history, addresses, settings)
+      - Search functionality
+      - Wishlist/favorites
+      - Related products recommendations
+    </customer_store_frontend>
+
+    <order_management>
+      - Order list with status filters
+      - Order detail view (items, customer, shipping, payment)
+      - Order status updates (pending, processing, shipped, delivered)
+      - Fulfillment tracking
+      - Refund processing
+      - Order notes and history
+      - Print packing slips/invoices
+      - Bulk order actions
+      - Order notifications to customer
+    </order_management>
+
+    <customer_settings>
+      - Profile management (name, email, avatar)
+      - Password change
+      - Two-factor authentication setup
+      - Notification preferences
+      - Billing history
+      - Current subscription/package info
+      - Connected payment accounts
+      - API keys for integrations
+      - Data export (GDPR compliance)
+      - Account deletion
+    </customer_settings>
 
     <admin_panel>
-      - Data source configuration
-      - Alert threshold settings
-      - Dashboard layout customization
-      - Rotation speed settings
-      - Panel visibility toggles
-      - Placeholder credential management
-      - Refresh interval settings
-      - Test connection buttons
+      - Admin dashboard with platform-wide metrics
+      - Customer management (list, search, filter, view details)
+      - View/edit any customer's dashboard
+      - View/edit any customer's store
+      - Store approval queue (pending, approved, rejected)
+      - Subscription/billing management
+      - Revenue reports (platform fees, MRR, churn)
+      - Announcement system (send to all or segments)
+      - Template management (add, edit, delete templates)
+      - AI configuration settings
+      - Platform settings (pricing, features, limits)
+      - User impersonation for support
+      - Audit logs (all admin actions)
+      - System health monitoring
     </admin_panel>
 
-    <display_optimization>
-      - Dark mode theme (TV optimized)
-      - Large readable fonts
-      - High contrast colors
-      - Auto-scaling for different screen sizes
-      - Minimal UI chrome for TV display
-      - Clock/timestamp display
-      - Last updated indicator
-    </display_optimization>
+    <notifications>
+      - In-app notification center
+      - Email notifications (orders, announcements, etc.)
+      - Push notifications (optional)
+      - Admin announcement broadcasts
+      - Order status update notifications
+      - Security alerts (new login, password change)
+      - Notification preferences management
+    </notifications>
+
+    <support>
+      - Help center / documentation
+      - Contact form
+      - Live chat widget
+      - Support ticket system (future)
+      - FAQ search
+    </support>
   </core_features>
 
   <database_schema>
     <tables>
-      <data_sources>
-        - id, name, type, endpoint_url, api_key_placeholder, polling_interval, enabled, created_at, updated_at
-      </data_sources>
-      <metrics>
-        - id, source_id, metric_name, metric_value, metric_unit, recorded_at
-      </metrics>
-      <alerts>
-        - id, source_id, alert_type, severity, message, triggered_at, acknowledged, acknowledged_at, resolved_at
-      </alerts>
-      <alert_thresholds>
-        - id, metric_name, warning_threshold, critical_threshold, comparison_operator, enabled
-      </alert_thresholds>
-      <deployments>
-        - id, environment, status, commit_hash, deployed_by, started_at, completed_at
-      </deployments>
-      <kubernetes_events>
-        - id, cluster_name, namespace, pod_name, event_type, message, occurred_at
-      </kubernetes_events>
-      <payment_transactions>
-        - id, provider, status, amount, currency, processed_at
-      </payment_transactions>
-      <dashboard_settings>
-        - id, setting_key, setting_value, updated_at
-      </dashboard_settings>
-      <admin_users>
-        - id, username, password_hash, last_login, created_at
-      </admin_users>
+      <users>
+        - id (uuid, primary key)
+        - email (unique, not null)
+        - password_hash (nullable for OAuth users)
+        - name (not null)
+        - avatar_url (nullable)
+        - role (enum: admin, customer)
+        - email_verified (boolean)
+        - two_factor_enabled (boolean)
+        - two_factor_secret (nullable)
+        - created_at, updated_at
+      </users>
+
+      <accounts>
+        - id, user_id (foreign key)
+        - provider, provider_account_id
+        - access_token, refresh_token, expires_at
+        - OAuth account linking for NextAuth
+      </accounts>
+
+      <sessions>
+        - id, user_id (foreign key)
+        - session_token (unique)
+        - expires_at
+        - ip_address, user_agent
+      </sessions>
+
+      <subscriptions>
+        - id, user_id (foreign key)
+        - package (enum: basic, standard, advanced, pro, master)
+        - stripe_payment_id
+        - amount, currency
+        - status (enum: active, cancelled, expired)
+        - purchased_at, expires_at
+      </subscriptions>
+
+      <stores>
+        - id (uuid, primary key)
+        - user_id (foreign key)
+        - name, slug (unique)
+        - description
+        - logo_url, favicon_url
+        - template_id (foreign key)
+        - theme_settings (jsonb: colors, fonts, etc.)
+        - custom_domain (nullable, unique)
+        - domain_verified (boolean)
+        - status (enum: draft, pending_approval, approved, suspended)
+        - currency, locale, timezone
+        - created_at, updated_at
+      </stores>
+
+      <store_pages>
+        - id, store_id (foreign key)
+        - title, slug, type (home, about, contact, product, custom)
+        - content (jsonb: page builder blocks)
+        - seo_title, seo_description
+        - is_published (boolean)
+        - sort_order
+        - created_at, updated_at
+      </store_pages>
+
+      <products>
+        - id, store_id (foreign key)
+        - title, description, slug
+        - price, compare_at_price
+        - sku, barcode
+        - inventory_quantity, track_inventory (boolean)
+        - status (enum: active, draft, archived)
+        - category_id (foreign key, nullable)
+        - seo_title, seo_description
+        - created_at, updated_at
+      </products>
+
+      <product_images>
+        - id, product_id (foreign key)
+        - url, alt_text
+        - sort_order, is_primary (boolean)
+      </product_images>
+
+      <product_variants>
+        - id, product_id (foreign key)
+        - title (e.g., "Large / Red")
+        - sku, price, inventory_quantity
+        - option_values (jsonb: {size: "Large", color: "Red"})
+      </product_variants>
+
+      <categories>
+        - id, store_id (foreign key)
+        - name, slug, description
+        - parent_id (self-referential, nullable)
+        - image_url, sort_order
+      </categories>
+
+      <orders>
+        - id, store_id (foreign key)
+        - order_number (unique per store)
+        - customer_email, customer_name
+        - shipping_address (jsonb)
+        - billing_address (jsonb)
+        - subtotal, tax, shipping_cost, total
+        - currency
+        - status (enum: pending, processing, shipped, delivered, cancelled, refunded)
+        - payment_status (enum: pending, paid, failed, refunded)
+        - payment_provider, payment_id
+        - notes
+        - created_at, updated_at
+      </orders>
+
+      <order_items>
+        - id, order_id (foreign key)
+        - product_id, variant_id (nullable)
+        - title, sku
+        - quantity, unit_price, total
+      </order_items>
+
+      <store_customers>
+        - id, store_id (foreign key)
+        - email, name
+        - password_hash (nullable for guest checkout)
+        - addresses (jsonb array)
+        - total_orders, total_spent
+        - created_at, updated_at
+      </store_customers>
+
+      <analytics_events>
+        - id, store_id (foreign key)
+        - event_type (page_view, add_to_cart, purchase, etc.)
+        - visitor_id, session_id
+        - page_url, referrer
+        - product_id (nullable)
+        - metadata (jsonb)
+        - created_at
+      </analytics_events>
+
+      <templates>
+        - id, name, slug
+        - description, thumbnail_url
+        - category (fashion, electronics, food, etc.)
+        - default_theme (jsonb)
+        - default_pages (jsonb)
+        - is_active (boolean)
+        - created_at, updated_at
+      </templates>
+
+      <announcements>
+        - id, admin_id (foreign key)
+        - title, content
+        - target (all, segment)
+        - target_segment (jsonb, nullable)
+        - is_published (boolean)
+        - published_at
+        - created_at
+      </announcements>
+
+      <notifications>
+        - id, user_id (foreign key)
+        - type (order, announcement, security, etc.)
+        - title, message
+        - data (jsonb)
+        - is_read (boolean)
+        - created_at
+      </notifications>
+
+      <payment_providers>
+        - id, store_id (foreign key)
+        - provider (stripe, paypal)
+        - is_active (boolean)
+        - credentials (encrypted jsonb)
+        - created_at, updated_at
+      </payment_providers>
+
+      <audit_logs>
+        - id, admin_id (foreign key)
+        - action, entity_type, entity_id
+        - details (jsonb)
+        - ip_address
+        - created_at
+      </audit_logs>
     </tables>
   </database_schema>
 
   <api_endpoints_summary>
-    <dashboard>
-      - GET /api/dashboard/views (get all dashboard view configs)
-      - GET /api/dashboard/current (get current rotation view)
-      - GET /api/dashboard/settings (get display settings)
-      - PUT /api/dashboard/settings (update display settings)
-    </dashboard>
-    <infrastructure>
-      - GET /api/infrastructure/health (overall health summary)
-      - GET /api/infrastructure/servers (server status list)
-      - GET /api/infrastructure/metrics (current metrics)
-      - GET /api/infrastructure/history (24h historical data)
-    </infrastructure>
-    <kubernetes>
-      - GET /api/kubernetes/clusters (cluster overview)
-      - GET /api/kubernetes/pods (pod status list)
-      - GET /api/kubernetes/events (recent events/downtime logs)
-      - GET /api/kubernetes/metrics (resource usage)
-    </kubernetes>
-    <deployments>
-      - GET /api/deployments/recent (recent deployments)
-      - GET /api/deployments/pipelines (pipeline status)
-      - GET /api/deployments/stats (deployment statistics)
-    </deployments>
-    <payments>
-      - GET /api/payments/status (payment system status)
-      - GET /api/payments/providers (provider health)
-      - GET /api/payments/metrics (transaction metrics)
-      - GET /api/payments/history (24h transaction history)
-    </payments>
-    <alerts>
-      - GET /api/alerts/active (current active alerts)
-      - GET /api/alerts/history (alert history)
-      - PUT /api/alerts/:id/acknowledge (acknowledge alert)
-      - GET /api/alerts/thresholds (get thresholds)
-      - PUT /api/alerts/thresholds (update thresholds)
-    </alerts>
+    <auth>
+      - POST /api/auth/register
+      - POST /api/auth/login
+      - POST /api/auth/logout
+      - POST /api/auth/forgot-password
+      - POST /api/auth/reset-password
+      - POST /api/auth/verify-email
+      - GET /api/auth/session
+      - NextAuth.js handles OAuth routes
+    </auth>
+
+    <customer>
+      - GET /api/customer/dashboard (analytics overview)
+      - GET /api/customer/analytics (detailed analytics)
+      - GET /api/customer/profile
+      - PUT /api/customer/profile
+      - PUT /api/customer/password
+      - GET /api/customer/notifications
+      - PUT /api/customer/notifications/:id/read
+      - GET /api/customer/subscription
+    </customer>
+
+    <stores>
+      - GET /api/stores (list user's stores)
+      - POST /api/stores (create store)
+      - GET /api/stores/:id
+      - PUT /api/stores/:id
+      - DELETE /api/stores/:id
+      - POST /api/stores/:id/publish (submit for approval)
+      - POST /api/stores/:id/verify-domain
+    </stores>
+
+    <pages>
+      - GET /api/stores/:storeId/pages
+      - POST /api/stores/:storeId/pages
+      - GET /api/stores/:storeId/pages/:id
+      - PUT /api/stores/:storeId/pages/:id
+      - DELETE /api/stores/:storeId/pages/:id
+    </pages>
+
+    <products>
+      - GET /api/stores/:storeId/products
+      - POST /api/stores/:storeId/products
+      - GET /api/stores/:storeId/products/:id
+      - PUT /api/stores/:storeId/products/:id
+      - DELETE /api/stores/:storeId/products/:id
+      - POST /api/stores/:storeId/products/import
+      - GET /api/stores/:storeId/products/export
+    </products>
+
+    <categories>
+      - GET /api/stores/:storeId/categories
+      - POST /api/stores/:storeId/categories
+      - PUT /api/stores/:storeId/categories/:id
+      - DELETE /api/stores/:storeId/categories/:id
+    </categories>
+
+    <orders>
+      - GET /api/stores/:storeId/orders
+      - GET /api/stores/:storeId/orders/:id
+      - PUT /api/stores/:storeId/orders/:id (update status)
+      - POST /api/stores/:storeId/orders/:id/refund
+    </orders>
+
+    <templates>
+      - GET /api/templates
+      - GET /api/templates/:id
+    </templates>
+
+    <ai>
+      - POST /api/ai/generate-store (AI store suggestions)
+      - POST /api/ai/generate-content (AI content generation)
+    </ai>
+
     <admin>
-      - POST /api/admin/login (admin authentication)
-      - GET /api/admin/sources (data source configs)
-      - PUT /api/admin/sources/:id (update data source)
-      - POST /api/admin/sources/test (test connection)
+      - GET /api/admin/dashboard (platform metrics)
+      - GET /api/admin/customers
+      - GET /api/admin/customers/:id
+      - PUT /api/admin/customers/:id
+      - DELETE /api/admin/customers/:id (suspend)
+      - GET /api/admin/stores
+      - GET /api/admin/stores/:id
+      - PUT /api/admin/stores/:id/approve
+      - PUT /api/admin/stores/:id/reject
+      - GET /api/admin/subscriptions
+      - POST /api/admin/announcements
+      - GET /api/admin/audit-logs
+      - GET /api/admin/templates
+      - POST /api/admin/templates
+      - PUT /api/admin/templates/:id
+      - DELETE /api/admin/templates/:id
     </admin>
-    <realtime>
-      - GET /api/stream (SSE endpoint for live updates)
-    </realtime>
+
+    <storefront>
+      - GET /api/storefront/:slug (public store data)
+      - GET /api/storefront/:slug/products
+      - GET /api/storefront/:slug/products/:id
+      - POST /api/storefront/:slug/cart
+      - POST /api/storefront/:slug/checkout
+      - POST /api/storefront/:slug/analytics (track events)
+    </storefront>
+
+    <payments>
+      - POST /api/payments/checkout (platform subscription)
+      - POST /api/payments/webhook (Stripe webhook)
+      - POST /api/stores/:storeId/payments/connect (connect Stripe)
+    </payments>
+
+    <uploads>
+      - POST /api/uploads/image
+      - DELETE /api/uploads/image/:key
+    </uploads>
   </api_endpoints_summary>
 
   <ui_layout>
     <main_structure>
-      Full-screen dashboard with rotating views. Each view fills the entire screen with a grid of metric panels. Minimal header showing current time, view name, and rotation indicator. No sidebar or navigation visible in TV mode.
+      Landing page and public store pages are full-width single column.
+      Dashboard and admin panel use a sidebar navigation layout with main content area.
+      Store builder uses a left panel (tools) + center canvas + right panel (properties) layout.
     </main_structure>
-    <view_layouts>
-      <infrastructure_view>
-        - Top row: Uptime %, Error Rate %, Avg Response Time
-        - Middle: Server health grid (colored status boxes)
-        - Bottom: 24h trend charts for key metrics
-      </infrastructure_view>
-      <kubernetes_view>
-        - Top row: Cluster health, Pod counts by status
-        - Middle: Pod status grid with color coding
-        - Bottom: Recent downtime events log
-      </kubernetes_view>
-      <deployments_view>
-        - Top row: Deployment frequency, Success rate
-        - Middle: Recent deployments list with status
-        - Bottom: Pipeline status indicators
-      </deployments_view>
-      <payments_view>
-        - Top row: Transaction volume, Success rate
-        - Middle: Provider status cards
-        - Bottom: 24h transaction trend chart
-      </payments_view>
-      <alerts_view>
-        - Full view: Active alerts list sorted by severity
-        - Sidebar: Alert counts by category
-        - Bottom: Recent incidents timeline
-      </alerts_view>
-    </view_layouts>
-    <admin_panel>
-      Separate admin route with sidebar navigation. Forms for configuring data sources, thresholds, and display settings. Protected by password.
-    </admin_panel>
+
+    <landing_page_layout>
+      - Fixed header with logo, nav links, and CTA button
+      - Full-width hero section
+      - Alternating content sections
+      - Pricing cards grid
+      - Full-width CTA section
+      - Footer with multiple columns
+    </landing_page_layout>
+
+    <dashboard_layout>
+      - Collapsible sidebar (260px) with navigation
+      - Top header with search, notifications, user menu
+      - Main content area with breadcrumbs
+      - Responsive: sidebar becomes mobile drawer on small screens
+    </dashboard_layout>
+
+    <store_builder_layout>
+      - Top toolbar with save, preview, publish buttons
+      - Left sidebar (240px) with components/blocks
+      - Center canvas (flexible) with live preview
+      - Right sidebar (300px) with properties panel
+      - Bottom bar with device preview toggles
+    </store_builder_layout>
+
+    <admin_panel_layout>
+      - Similar to dashboard but with admin-specific navigation
+      - Data tables with filters, search, bulk actions
+      - Detail views with edit capabilities
+      - Modals for quick actions
+    </admin_panel_layout>
   </ui_layout>
 
   <design_system>
     <color_palette>
-      <background>#0f172a (slate-900)</background>
-      <surface>#1e293b (slate-800)</surface>
-      <border>#334155 (slate-700)</border>
-      <text_primary>#f8fafc (slate-50)</text_primary>
-      <text_secondary>#94a3b8 (slate-400)</text_secondary>
-      <status_healthy>#22c55e (green-500)</status_healthy>
-      <status_warning>#eab308 (yellow-500)</status_warning>
-      <status_critical>#ef4444 (red-500)</status_critical>
-      <status_unknown>#6b7280 (gray-500)</status_unknown>
-      <accent>#3b82f6 (blue-500)</accent>
+      - Primary: #2563eb (blue-600) - main actions, links
+      - Secondary: #7c3aed (violet-600) - accents
+      - Success: #16a34a (green-600)
+      - Warning: #ca8a04 (yellow-600)
+      - Error: #dc2626 (red-600)
+      - Neutral: slate scale (50-950)
+      - Background: white (#ffffff) / slate-50
+      - Dark mode support with inverted palette
     </color_palette>
-    <typography>
-      <font_family>Inter, system-ui, sans-serif</font_family>
-      <metric_large>4rem bold for big numbers</metric_large>
-      <metric_medium>2rem for secondary metrics</metric_medium>
-      <labels>1rem for labels and descriptions</labels>
-    </typography>
-    <spacing>
-      Large padding and gaps for TV readability. Minimum touch targets not required (view-only display).
-    </spacing>
-  </design_system>
 
-  <data_source_placeholders>
-    <aws_cloudwatch>
-      - AWS_ACCESS_KEY_ID=your-access-key
-      - AWS_SECRET_ACCESS_KEY=your-secret-key
-      - AWS_REGION=us-east-1
-    </aws_cloudwatch>
-    <kubernetes>
-      - KUBE_API_SERVER=https://your-cluster-api
-      - KUBE_TOKEN=your-service-account-token
-    </kubernetes>
-    <github_actions>
-      - GITHUB_TOKEN=your-github-token
-      - GITHUB_ORG=your-organization
-    </github_actions>
-    <stripe>
-      - STRIPE_API_KEY=your-stripe-key
-    </stripe>
-    <datadog>
-      - DATADOG_API_KEY=your-datadog-key
-      - DATADOG_APP_KEY=your-app-key
-    </datadog>
-    <pagerduty>
-      - PAGERDUTY_API_KEY=your-pagerduty-key
-    </pagerduty>
-  </data_source_placeholders>
+    <typography>
+      - Font family: Inter (sans-serif)
+      - Headings: bold weight, tight letter-spacing
+      - Body: regular weight, relaxed line-height
+      - Mono: JetBrains Mono for code/data
+      - Scale: text-xs through text-4xl
+    </typography>
+
+    <components>
+      - shadcn/ui component library
+      - Consistent border radius (rounded-lg default)
+      - Subtle shadows for elevation
+      - Focus rings for accessibility
+      - Smooth transitions (150ms ease)
+    </components>
+
+    <icons>
+      - Lucide React icon library
+      - Consistent 20px/24px sizing
+      - Stroke width 1.5-2
+    </icons>
+  </design_system>
 
   <implementation_steps>
     <step number="1">
-      <title>Project Setup & Core Infrastructure</title>
+      <title>Project Setup and Infrastructure</title>
       <tasks>
-        - Initialize React frontend with TypeScript and Tailwind
-        - Set up Node.js backend with Express
-        - Configure SQLite database with schema
-        - Implement basic API structure
-        - Set up SSE for real-time updates
+        - Initialize Next.js 14 project with TypeScript
+        - Configure Tailwind CSS and shadcn/ui
+        - Set up Prisma with PostgreSQL
+        - Configure NextAuth.js with providers
+        - Set up environment variables
+        - Create basic folder structure
+        - Set up ESLint and Prettier
       </tasks>
     </step>
+
     <step number="2">
-      <title>Dashboard Framework</title>
+      <title>Database and Authentication</title>
       <tasks>
-        - Build rotating view system with 30s intervals
-        - Create full-screen TV display mode
-        - Implement dark theme design system
-        - Build reusable metric panel components
-        - Add time/status header bar
+        - Create Prisma schema with all models
+        - Run migrations
+        - Implement user registration and login
+        - Implement OAuth providers
+        - Create auth middleware
+        - Implement role-based access control
+        - Email verification flow
+        - Password reset flow
       </tasks>
     </step>
+
     <step number="3">
-      <title>Infrastructure Monitoring View</title>
+      <title>Landing Page and Marketing</title>
       <tasks>
-        - Build server health grid component
-        - Create uptime/error rate/response time panels
-        - Add 24h trend mini-charts
-        - Implement health check polling
-        - Connect to placeholder data sources
+        - Build landing page with all sections
+        - Build pricing page
+        - Implement Stripe checkout for subscriptions
+        - Create legal pages (privacy, terms)
+        - SEO optimization
+        - Responsive design testing
       </tasks>
     </step>
+
     <step number="4">
-      <title>Kubernetes Monitoring View</title>
+      <title>Customer Dashboard</title>
       <tasks>
-        - Build pod status grid
-        - Create cluster health overview
-        - Implement downtime logs display
-        - Add resource usage indicators
-        - Connect to Kubernetes API placeholder
+        - Dashboard layout with sidebar navigation
+        - Analytics overview cards
+        - Revenue and traffic charts
+        - Recent orders list
+        - Date range selector
+        - Export functionality
       </tasks>
     </step>
+
     <step number="5">
-      <title>Deployments & CI/CD View</title>
+      <title>Store Builder - Core</title>
       <tasks>
-        - Build recent deployments list
-        - Create pipeline status indicators
-        - Add deployment statistics panel
-        - Implement deployment frequency charts
-        - Connect to GitHub Actions placeholder
+        - Template gallery and selection
+        - Store creation flow
+        - Basic page editor
+        - Theme customization panel
+        - Logo and branding upload
+        - Preview mode
       </tasks>
     </step>
+
     <step number="6">
-      <title>Payments Monitoring View</title>
+      <title>Store Builder - Products</title>
       <tasks>
-        - Build provider status cards
-        - Create transaction volume counters
-        - Add success rate indicators
-        - Implement transaction trend charts
-        - Connect to payment provider placeholders
+        - Product CRUD operations
+        - Image upload and gallery
+        - Variants and inventory
+        - Categories management
+        - Bulk import/export
       </tasks>
     </step>
+
     <step number="7">
-      <title>Alerting System</title>
+      <title>Store Builder - Advanced</title>
       <tasks>
-        - Build active alerts display
-        - Implement alert severity color coding
-        - Create incidents timeline
-        - Add alert thresholds checking
-        - Build alert acknowledgment system
+        - Drag-and-drop page builder
+        - AI store generation
+        - Navigation menu editor
+        - SEO settings
+        - Domain management
       </tasks>
     </step>
+
     <step number="8">
+      <title>Customer Storefront</title>
+      <tasks>
+        - Dynamic storefront rendering
+        - Product listing with filters
+        - Product detail page
+        - Shopping cart
+        - Checkout flow
+        - Order confirmation
+      </tasks>
+    </step>
+
+    <step number="9">
+      <title>Order Management</title>
+      <tasks>
+        - Order listing and detail views
+        - Status management
+        - Refund processing
+        - Order notifications
+        - Customer management
+      </tasks>
+    </step>
+
+    <step number="10">
+      <title>Payment Integration</title>
+      <tasks>
+        - Stripe Connect for customer stores
+        - PayPal integration
+        - Payment webhooks
+        - Payout management
+      </tasks>
+    </step>
+
+    <step number="11">
+      <title>Analytics System</title>
+      <tasks>
+        - Event tracking implementation
+        - Analytics data aggregation
+        - Dashboard visualizations
+        - Real-time updates
+        - Goal tracking
+      </tasks>
+    </step>
+
+    <step number="12">
       <title>Admin Panel</title>
       <tasks>
-        - Build admin login page
-        - Create data source configuration forms
-        - Add threshold settings interface
-        - Implement dashboard customization
-        - Add connection testing functionality
+        - Admin dashboard
+        - Customer management
+        - Store approval workflow
+        - Announcement system
+        - Template management
+        - Audit logs
       </tasks>
     </step>
-    <step number="9">
-      <title>Polish & Optimization</title>
+
+    <step number="13">
+      <title>Notifications and Support</title>
       <tasks>
-        - Optimize for TV display performance
-        - Add loading states and error handling
-        - Implement data caching
-        - Test on various screen sizes
-        - Final UI polish and refinements
+        - Notification system
+        - Email notifications
+        - Help center
+        - Contact forms
+        - Live chat integration
+      </tasks>
+    </step>
+
+    <step number="14">
+      <title>Polish and Optimization</title>
+      <tasks>
+        - Performance optimization
+        - Accessibility audit
+        - Security hardening
+        - Error handling
+        - Loading states
+        - Empty states
+        - Documentation
       </tasks>
     </step>
   </implementation_steps>
 
   <success_criteria>
     <functionality>
-      - All five dashboard views display correctly and rotate automatically
-      - Real-time data updates without page refresh
-      - All placeholder data sources can be configured
-      - Alerts trigger based on configured thresholds
-      - Admin can modify settings and thresholds
+      - All CRUD operations work correctly
+      - Authentication flows complete without errors
+      - Payments process successfully
+      - Analytics display accurate real-time data
+      - Store builder creates functional stores
+      - Customer stores accept orders
+      - Admin can manage entire platform
     </functionality>
+
     <user_experience>
-      - Dashboard is readable from across a room on TV screens
-      - Status is immediately clear at a glance (color coding works)
-      - Rotation is smooth and non-disruptive
-      - Historical trends provide useful context
+      - Pages load in under 3 seconds
+      - Intuitive navigation without documentation
+      - Clear feedback for all actions
+      - Mobile-responsive on all pages
+      - No dead-end states or confusing errors
     </user_experience>
+
     <technical_quality>
-      - Application runs reliably for extended periods
-      - Data refresh is efficient and doesn't overload sources
-      - Error states are handled gracefully
-      - 150+ tests covering core functionality
+      - No TypeScript errors
+      - All API routes handle errors gracefully
+      - Database queries are optimized
+      - Security best practices followed
+      - Code is maintainable and documented
     </technical_quality>
+
     <design_polish>
-      - Dark mode is visually appealing on large displays
-      - Typography is clear and readable
-      - Color coding is consistent and intuitive
-      - Layout adapts well to different screen sizes
+      - Consistent visual design throughout
+      - Proper spacing and alignment
+      - Professional typography
+      - Smooth transitions and animations
+      - Dark mode support (optional)
     </design_polish>
   </success_criteria>
 </project_specification>
